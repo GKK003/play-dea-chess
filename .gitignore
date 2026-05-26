@@ -1,0 +1,13 @@
+# Dependencies and framework output
+node_modules/
+.next/
+out/
+
+# Local build and environment files
+*.tsbuildinfo
+.env*
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
