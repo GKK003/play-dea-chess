@@ -242,97 +242,202 @@ export default function Home() {
   }
 
   const evaluation = formatEvaluation(evaluationCp);
+  const whiteEvaluationPercent = evaluationCp === null
+    ? 50
+    : Math.min(92, Math.max(8, 50 + evaluationCp / 18));
+  const deaTurnLabel = isBotThinking
+    ? 'Thinking...'
+    : game.turn() === 'b' && !game.isGameOver()
+      ? 'To move'
+      : 'Black';
+  const playerTurnLabel = !isBotThinking && game.turn() === 'w' && !game.isGameOver()
+    ? 'Your turn'
+    : 'White';
 
   return (
-    <main className="min-h-screen bg-[#0f172a] px-4 py-8 text-white">
+    <main className="min-h-[100svh] bg-[#121212] text-white">
       {illegalMoveNotice && (
         <div
           role="alert"
-          className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-xl bg-rose-500 px-5 py-3 font-semibold text-white shadow-2xl"
+          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-rose-500 px-5 py-3 font-semibold text-white shadow-2xl"
         >
           Illegal move
         </div>
       )}
-      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[380px_1fr]">
-        <section className="rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
+      <header className="flex items-center justify-between border-b border-white/10 px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#81b64c] text-white">
+            <Crown size={21} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Play Dea</h1>
+            <p className="text-xs text-white/55">Style match</p>
+          </div>
+        </div>
+        <button
+          onClick={reset}
+          className="rounded-lg bg-white/10 p-2.5 text-white hover:bg-white/15"
+          aria-label="New game"
+        >
+          <RotateCcw size={19} />
+        </button>
+      </header>
+
+      <div className="mx-auto grid w-full max-w-[1130px] grid-cols-1 gap-5 overflow-hidden pb-6 lg:grid-cols-[minmax(540px,730px)_360px] lg:px-5 lg:py-6">
+        <section className="w-full min-w-0 max-w-full overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-3 sm:px-4 lg:px-0 lg:pb-3 lg:pt-0">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#312e2b] font-bold text-[#b58863]">
+                D
+              </div>
+              <div>
+                <div className="font-semibold">Dea</div>
+                <div className="text-xs text-white/55">{deaTurnLabel}</div>
+              </div>
+            </div>
+            <div className="rounded-md bg-[#262522] px-3 py-1.5 text-sm font-semibold tabular-nums text-white/85">
+              {evaluation.score}
+            </div>
+          </div>
+
+          <div className="flex w-full max-w-full items-stretch gap-1 overflow-hidden bg-[#121212] px-0 sm:px-3 lg:px-0">
+            <div className="relative w-2 shrink-0 overflow-hidden rounded-l-sm bg-[#262522] sm:w-3 sm:rounded-md">
+              <div
+                className="absolute inset-x-0 bottom-0 bg-[#f0f0f0] transition-[height] duration-300"
+                style={{ height: `${whiteEvaluationPercent}%` }}
+              />
+            </div>
+            <div className="play-board min-w-0 overflow-hidden sm:rounded-md">
+              <Chessboard
+                options={{
+                  position: game.fen(),
+                  onPieceDrop: onDrop,
+                  allowDragging: isReady && !isBotThinking && !game.isGameOver() && game.turn() === 'w',
+                  darkSquareStyle: { backgroundColor: '#b58863' },
+                  lightSquareStyle: { backgroundColor: '#f0d9b5' },
+                  boardStyle: {
+                    gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+                    aspectRatio: '1 / 1',
+                    width: '100%',
+                    height: 'auto',
+                    overflow: 'hidden',
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between px-3 py-3 sm:px-4 lg:px-0">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f0f0f0] font-bold text-[#312e2b]">
+                Y
+              </div>
+              <div>
+                <div className="font-semibold">You</div>
+                <div className="text-xs text-[#81b64c]">{playerTurnLabel}</div>
+              </div>
+            </div>
+            <div className="text-sm text-white/55">White</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 px-3 sm:px-4 lg:hidden">
+            <button
+              onClick={takeBack}
+              disabled={!canTakeBack}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#262522] px-3 py-3 font-semibold transition hover:bg-[#343330] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Undo2 size={19} />
+              Take back
+            </button>
+            <button
+              onClick={reset}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#81b64c] px-3 py-3 font-semibold text-white hover:bg-[#95c45d]"
+            >
+              <RotateCcw size={19} />
+              New game
+            </button>
+          </div>
+
+          <div className="mx-3 mt-3 rounded-lg bg-[#262522] p-4 sm:mx-4 lg:hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-white/80">
+                  <Sparkles size={16} />
+                  Game status
+                </div>
+                <p className="mt-2 text-sm text-white/70">{message}</p>
+              </div>
+              <div className="text-right text-sm text-white/65">
+                <div>{evaluation.summary}</div>
+                <div className="mt-1 text-xs">+ White / - Dea</div>
+              </div>
+            </div>
+            {lastBotMove && <p className="mt-2 text-xs text-white/55">Last move: {lastBotMove}</p>}
+          </div>
+        </section>
+
+        <aside className="hidden rounded-xl bg-[#262522] p-5 shadow-xl lg:block">
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#0f172a]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#81b64c] text-white">
               <Crown size={26} />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Play Dea</h1>
-              <p className="text-sm text-white/70">Trained from uploaded Deiko27 games</p>
+              <p className="text-sm text-white/60">Trained from Deiko27 games</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white bg-white p-4 text-[#0f172a]">
-            <div className="font-bold">Dea</div>
-            <div className="text-sm text-slate-600">
-              {gamesLoaded ? `${gamesLoaded} standard games loaded` : 'Loading uploaded PGN memory...'}
+          <div className="rounded-lg bg-[#312e2b] p-4">
+            <div className="font-semibold">Dea</div>
+            <div className="mt-1 text-sm text-white/60">
+              {gamesLoaded ? `${gamesLoaded} standard games loaded` : 'Loading PGN memory...'}
             </div>
             {positionsLearned > 0 && (
-              <div className="text-sm text-slate-600">{positionsLearned.toLocaleString()} positions learned</div>
+              <div className="text-sm text-white/60">{positionsLearned.toLocaleString()} positions learned</div>
             )}
           </div>
 
-          <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 p-4">
+          <div className="mt-4 flex items-center justify-between rounded-lg bg-[#312e2b] p-4">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-white/50">Evaluation</div>
-              <div className="mt-1 text-sm text-white/75">{evaluation.summary}</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-white/45">Evaluation</div>
+              <div className="mt-1 text-sm text-white/70">{evaluation.summary}</div>
               <div className="mt-1 text-xs text-white/45">+ White / - Dea</div>
             </div>
             <div className="text-3xl font-bold tabular-nums">{evaluation.score}</div>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-black/25 p-4">
+          <div className="mt-4 rounded-lg bg-[#312e2b] p-4">
             <div className="mb-2 flex items-center gap-2 font-semibold">
               <Sparkles size={18} />
               Status
             </div>
-            <p className="text-sm text-white/75">{message}</p>
-            {lastBotMove && <p className="mt-2 text-sm text-white/75">Last Dea move: {lastBotMove}</p>}
-            {lastCalculation && <p className="mt-2 text-sm text-white/60">{lastCalculation}</p>}
+            <p className="text-sm text-white/70">{message}</p>
+            {lastBotMove && <p className="mt-2 text-sm text-white/70">Last Dea move: {lastBotMove}</p>}
+            {lastCalculation && <p className="mt-2 text-sm text-white/55">{lastCalculation}</p>}
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
               onClick={takeBack}
               disabled={!canTakeBack}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-3 font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center justify-center gap-2 rounded-lg bg-[#312e2b] px-3 py-3 font-semibold transition hover:bg-[#3b3937] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Undo2 size={18} />
               Take back
             </button>
             <button
               onClick={reset}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 font-bold text-[#0f172a] hover:bg-white/90"
+              className="flex items-center justify-center gap-2 rounded-lg bg-[#81b64c] px-3 py-3 font-semibold hover:bg-[#95c45d]"
             >
               <RotateCcw size={18} />
               New game
             </button>
           </div>
 
-          <p className="mt-5 text-xs leading-5 text-white/50">
+          <p className="mt-5 text-xs leading-5 text-white/45">
             Stockfish calculates strong candidates, then Dea&apos;s recorded patterns prefer her style among sound choices.
           </p>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl">
-          <div className="mx-auto max-w-[680px]">
-            <Chessboard
-              options={{
-                position: game.fen(),
-                onPieceDrop: onDrop,
-                allowDragging: isReady && !isBotThinking && !game.isGameOver() && game.turn() === 'w',
-                boardStyle: {
-                  borderRadius: '20px',
-                  overflow: 'hidden',
-                  boxShadow: '0 25px 80px rgba(0,0,0,.45)',
-                },
-              }}
-            />
-          </div>
-        </section>
+        </aside>
       </div>
     </main>
   );

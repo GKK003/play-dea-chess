@@ -1,3 +1,29 @@
 @import "tailwindcss";
 
-*{box-sizing:border-box} body{margin:0;background:#111827;color:white;font-family:Arial,Helvetica,sans-serif}
+*{box-sizing:border-box}
+
+html,body{margin:0;background:#121212;color:white;font-family:Arial,Helvetica,sans-serif}
+
+body{overscroll-behavior-y:none}
+
+button{touch-action:manipulation}
+
+.play-board{
+  flex:0 0 min(calc(100vw - 12px),720px);
+  width:min(calc(100vw - 12px),720px);
+}
+
+@media (min-width:640px){
+  .play-board{
+    flex-basis:min(calc(100vw - 40px),720px);
+    width:min(calc(100vw - 40px),720px);
+  }
+}
+
+@media (min-width:1024px){
+  .play-board{
+    flex:1 1 auto;
+    width:auto;
+    max-width:720px;
+  }
+}
