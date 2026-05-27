@@ -108,7 +108,7 @@ export class StockfishCalculator {
     const candidates = [...pending.candidates.values()];
     if (!candidates.length) return null;
 
-    // Stockfish reports and orders scores from the side to move at the root; Dea is Black here.
+    // Stockfish reports candidate scores for the root player; Dea is the side to move here.
     const strongest = Math.max(...candidates.map((candidate) => candidate.score));
     let chosen: { candidate: Candidate; san: string; combined: number } | null = null;
 

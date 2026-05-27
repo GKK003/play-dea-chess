@@ -1,5 +1,12 @@
 import { Chess } from 'chess.js';
-import { deaPgnPlayerName, type DeaMoveBook, type DeaMoveStat, type DeaStyleProfile } from '@/data/deaGames';
+import {
+  deaPgnPlayerName,
+  type DeaColor,
+  type DeaMoveBook,
+  type DeaMoveStat,
+  type DeaStyleProfile,
+  type DeaTrainingData,
+} from '@/data/deaGames';
 
 function stripHeaders(pgn: string) {
   return pgn
@@ -19,13 +26,16 @@ export function positionKey(fen: string) {
   return fen.split(' ').slice(0, 4).join(' ');
 }
 
-function updateResult(stat: DeaMoveStat, result: string | undefined) {
-  if (result === '0-1') stat.wins += 1;
-  else if (result === '1-0') stat.losses += 1;
+function updateResult(stat: DeaMoveStat, result: string | undefined, deaColor: DeaColor) {
+  const deaWon = deaColor === 'w' ? result === '1-0' : result === '0-1';
+  const deaLost = deaColor === 'w' ? result === '0-1' : result === '1-0';
+
+  if (deaWon) stat.wins += 1;
+  else if (deaLost) stat.losses += 1;
   else stat.draws += 1;
 }
 
-export function buildDeaBook(pgnArchive: string) {
+export function buildDeaBook(pgnArchive: string, deaColor: DeaColor = 'b'): DeaTrainingData {
   const book: DeaMoveBook = {};
   const profile: DeaStyleProfile = {
     totalMoves: 0,
@@ -37,9 +47,10 @@ export function buildDeaBook(pgnArchive: string) {
   };
   const games = pgnArchive.split(/(?=^\[Event\s+")/m).filter((pgn) => pgn.trim());
   let gamesUsed = 0;
+  const deaHeader = deaColor === 'w' ? 'White' : 'Black';
 
   for (const pgn of games) {
-    if (getHeaderValue(pgn, 'Black') !== deaPgnPlayerName || getHeaderValue(pgn, 'Variant') !== 'Standard') {
+    if (getHeaderValue(pgn, deaHeader) !== deaPgnPlayerName || getHeaderValue(pgn, 'Variant') !== 'Standard') {
       continue;
     }
 
@@ -50,7 +61,7 @@ export function buildDeaBook(pgnArchive: string) {
 
     for (const san of tokens) {
       const fenBefore = positionKey(chess.fen());
-      const isDeaMove = chess.turn() === 'b';
+      const isDeaMove = chess.turn() === deaColor;
       let move;
 
       try {
@@ -68,7 +79,7 @@ export function buildDeaBook(pgnArchive: string) {
 
       const stat = book[fenBefore][move.san];
       stat.plays += 1;
-      updateResult(stat, result);
+      updateResult(stat, result, deaColor);
 
       profile.totalMoves += 1;
       profile.pieceMoves[move.piece] = (profile.pieceMoves[move.piece] ?? 0) + 1;

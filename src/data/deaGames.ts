@@ -8,6 +8,8 @@ export type DeaMoveStat = {
 
 export type DeaMoveBook = Record<string, Record<string, DeaMoveStat>>;
 
+export type DeaColor = 'w' | 'b';
+
 export type DeaStyleProfile = {
   totalMoves: number;
   captures: number;
@@ -15,6 +17,12 @@ export type DeaStyleProfile = {
   castles: number;
   pieceMoves: Record<string, number>;
   pawnFiles: Record<string, number>;
+};
+
+export type DeaTrainingData = {
+  book: DeaMoveBook;
+  profile: DeaStyleProfile;
+  gamesUsed: number;
 };
 
 export const deaPgnAssetPath = '/dea-games.pgn';

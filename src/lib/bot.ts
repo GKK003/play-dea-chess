@@ -1,6 +1,6 @@
 import { Chess, type Move } from 'chess.js';
 import { positionKey } from '@/lib/deaBook';
-import type { DeaMoveBook, DeaMoveStat, DeaStyleProfile } from '@/data/deaGames';
+import type { DeaColor, DeaMoveBook, DeaMoveStat, DeaStyleProfile } from '@/data/deaGames';
 
 const MATE_SCORE = 100000;
 const SEARCH_TIME_MS = 700;
@@ -237,20 +237,27 @@ function rootScore(
   depth: number,
   book: DeaMoveBook,
   profile: DeaStyleProfile,
+  deaColor: DeaColor,
   state: SearchState,
 ) {
   const stat = book[positionKey(chess.fen())]?.[move.san];
   chess.move(move.san);
   const calculated = search(chess, depth - 1, -Infinity, Infinity, 1, state);
   chess.undo();
+  const styleBonus = getDeaStyleBonus(chess, move, book, profile);
 
   return {
-    score: calculated + getDeaStyleBonus(chess, move, book, profile),
+    scoreForBlack: calculated + (deaColor === 'b' ? styleBonus : -styleBonus),
     recordedPlays: stat?.plays ?? 0,
   };
 }
 
-export function chooseDeaMove(chess: Chess, book: DeaMoveBook, profile: DeaStyleProfile): DeaDecision | null {
+export function chooseDeaMove(
+  chess: Chess,
+  book: DeaMoveBook,
+  profile: DeaStyleProfile,
+  deaColor: DeaColor = 'b',
+): DeaDecision | null {
   const moves = chess.moves({ verbose: true });
   if (!moves.length) return null;
 
@@ -265,26 +272,33 @@ export function chooseDeaMove(chess: Chess, book: DeaMoveBook, profile: DeaStyle
   let completed: DeaDecision | null = null;
 
   for (let depth = 1; depth <= maximumDepth; depth += 1) {
-    let bestAtDepth: DeaDecision | null = null;
+    let bestAtDepth: { decision: DeaDecision; scoreForBlack: number } | null = null;
 
     for (const move of ordered) {
-      const result = rootScore(chess, move, depth, book, profile, state);
+      const result = rootScore(chess, move, depth, book, profile, deaColor, state);
       if (state.stopped) break;
 
-      if (!bestAtDepth || result.score > bestAtDepth.score) {
+      const isBetter = !bestAtDepth || (deaColor === 'b'
+        ? result.scoreForBlack > bestAtDepth.scoreForBlack
+        : result.scoreForBlack < bestAtDepth.scoreForBlack);
+
+      if (isBetter) {
         bestAtDepth = {
-          san: move.san,
-          depth,
-          score: Math.round(result.score),
-          nodes: state.nodes,
-          recordedPlays: result.recordedPlays,
-          calculator: 'Local search',
+          scoreForBlack: result.scoreForBlack,
+          decision: {
+            san: move.san,
+            depth,
+            score: Math.round(deaColor === 'b' ? result.scoreForBlack : -result.scoreForBlack),
+            nodes: state.nodes,
+            recordedPlays: result.recordedPlays,
+            calculator: 'Local search',
+          },
         };
       }
     }
 
     if (state.stopped) break;
-    if (bestAtDepth) completed = bestAtDepth;
+    if (bestAtDepth) completed = bestAtDepth.decision;
   }
 
   return completed ?? {
